@@ -187,6 +187,29 @@ class DoubleConvBlock(layers.Layer):
             x = self.relu(x)
         return x
 
+class CoFusion(layers.Layer):
+
+    def __init__(self, out_features, **kwargs):
+        super(CoFusion, self).__init__(**kwargs)
+        self.conv1 = layers.Conv2D(filters=64, kernel_size=(3, 3), 
+                               strides=(1, 1), padding='same')
+        self.conv2 = layers.Conv2D(filters=64, kernel_size=(3, 3),
+                               strides=(1, 1), padding='same')
+        self.conv3 = layers.Conv2D(filters=out_features, kernel_size=3,
+                               strides=(1, 1), padding='same')
+        self.relu = layers.ReLU()
+
+        self.norm_layer1 = layers.LayerNormalization(64)# nn.GroupNorm(4, 64)
+        self.norm_layer2 = layers.LayerNormalization(64)# nn.GroupNorm(4, 64)
+
+    def forward(self, x):
+        # fusecat = torch.cat(x, dim=1)
+        attn = self.relu(self.norm_layer1(self.conv1(x)))
+        attn = self.relu(self.norm_layer2(self.conv2(attn)))
+        attn = layers.Softmax(self.conv3(attn), dim=1)
+
+        # return ((fusecat * attn).sum(1)).unsqueeze(1)
+        return ((x * attn).sum(1)).unsqueeze(1)
 
 class DexiNed(tf.keras.Model):
     """DexiNet model."""
@@ -223,8 +246,8 @@ class DexiNed(tf.keras.Model):
                                       w_init=weight_init)
         self.pre_dense_4 = SingleConvBlock(512,k_size=(1,1),stride=(1,1),use_bs=True,
                                       w_init=weight_init)
-        # self.pre_dense_5_0 = SingleConvBlock(512, k_size=(1,1),stride=(2,2),
-        #                               w_init=weight_init) # use_bn=True
+        self.pre_dense_5_0 = SingleConvBlock(512, k_size=(1,1),stride=(2,2),
+                                      w_init=weight_init) # use_bn=True
         self.pre_dense_5 = SingleConvBlock(512,k_size=(1,1),stride=(1,1),use_bs=True,
                                       w_init=weight_init)
         self.pre_dense_6 = SingleConvBlock(256,k_size=(1,1),stride=(1,1),use_bs=True,
@@ -240,6 +263,8 @@ class DexiNed(tf.keras.Model):
         self.block_cat = SingleConvBlock(
             1,k_size=(1,1),stride=(1,1),
             w_init=tf.constant_initializer(1/5))
+
+        # self.block_cat_1 = CoFusion(6)
 
 
     def slice(self, tensor, slice_shape):
@@ -275,8 +300,8 @@ class DexiNed(tf.keras.Model):
         block_4_side = self.side_4(block_4_add)
 
         # Block 5
-        # block_5_pre_dense_512 = self.pre_dense_5_0(block_4_pre_dense_256)
-        block_5_pre_dense = self.pre_dense_5(block_4_down )
+        block_5_pre_dense_512 = self.pre_dense_5_0(block_4_pre_dense_256)
+        block_5_pre_dense = self.pre_dense_5(block_5_pre_dense_512 )
         block_5, _ = self.dblock_5([block_4_add, block_5_pre_dense])
         block_5_add = block_5 + block_4_side
 

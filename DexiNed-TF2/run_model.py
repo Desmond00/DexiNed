@@ -159,11 +159,15 @@ class run_DexiNed():
         my_model = DexiNed(rgb_mean=self.args.rgbn_mean)
         input_shape = test_data.input_shape
         my_model.build(input_shape=input_shape)  # rgb_mean=self.args.rgbn_mean
+        # print(my_model.summary())
 
         checkpoit_dir = os.path.join(self.args.checkpoint_dir,
                                      self.args.model_name + "2" + self.args.data4train)
 
-        my_model.load_weights(os.path.join(checkpoit_dir, self.args.checkpoint))
+        if '/' in self.args.checkpoint:
+            my_model.load_weights(self.args.checkpoint)
+        else:
+            my_model.load_weights(os.path.join(checkpoit_dir, self.args.checkpoint))
 
         result_dir = os.path.join(
             self.args.output_dir,

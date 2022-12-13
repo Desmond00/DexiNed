@@ -26,7 +26,7 @@ TEST_DATA = DATASET_NAME[-1] # MULTICUE=6
 TRAIN_DATA = DATASET_NAME[0]
 test_data_inf = dataset_info(TEST_DATA, is_linux=in_linux)
 train_data_inf = dataset_info(TRAIN_DATA, is_linux=in_linux)
-test_model=False
+test_model=True
 is_testing ="test" if test_model else "train"
 # training settings
 
@@ -68,7 +68,7 @@ parser.add_argument("--beta1", type=float, default=0.5, help="momentum term of a
 parser.add_argument("--l1_weight", type=float, default=100.0, help="weight on L1 term for generator gradient")
 parser.add_argument("--gan_weight", type=float, default=1.0, help="weight on GAN term for generator gradient")
 parser.add_argument("--rgbn_mean", type=float, default=[103.939,116.779,123.68, 137.86], help="pixels mean")
-parser.add_argument("--checkpoint", type=str, default='DexiNed19_model.h5', help="checkpoint Name")
+parser.add_argument("--checkpoint", type=str, default='model/DexiNed23_model.h5', help="checkpoint Name")
 
 arg = parser.parse_args()
 def main(args):
